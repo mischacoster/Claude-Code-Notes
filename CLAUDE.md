@@ -1,109 +1,55 @@
-# claude-notes-skill
+# CLAUDE.md
 
-A `/notes` skill + background research agent for Claude Code. Capture ideas mid-session without breaking your flow.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What This Is
+## Project Overview
 
-A two-part system for Claude Code:
-1. **Skill** (`/notes`) — slash command to capture or review ideas
-2. **Agent** (`notes-researcher`) — background Haiku agent that researches the idea in your codebase
+A `/notes` skill + background research agent for Claude Code. Two-part system:
+1. **Skill** ([SKILL.md](skills/notes/SKILL.md)) — `/notes [idea]` to capture, `/notes` to review
+2. **Agent** ([notes-researcher.md](agents/notes-researcher.md)) — background Haiku agent that researches ideas in the codebase
 
-## Development History & Design Decisions
-
-### The Problem
-During Claude Code sessions, ideas and requirements pop up that aren't related to the current task. Without a capture system, they get lost or break your workflow.
-
-### Iteration Journey
-
-**Attempt 1: `nohup claude -p` (failed)**
-The original skill tried to spawn a background Claude CLI process from Bash using `nohup claude -p "..." &`. This doesn't work inside the Claude Code environment — the `claude` CLI isn't available as a subprocess in this context.
-
-**Attempt 2: Agent tool with `run_in_background: true` + Write tool (failed)**
-Switched to using Claude Code's built-in Agent tool. The background agent could read the codebase but couldn't write files — the Write tool requires permissions that spawned agents don't inherit, even with `mode: "bypassPermissions"`.
-
-**Attempt 3: Agent tool + Bash heredoc for writing (works!)**
-The breakthrough: instead of using the Write tool, the agent writes files via `cat > file.md << 'EOF'` in Bash. Bash file writing works where the Write tool doesn't.
-
-**Attempt 4: Custom agent `notes-researcher` (works!)**
-Created a dedicated agent in `~/.claude/agents/notes-researcher.md` with:
-- `model: haiku` for speed (instead of inheriting the parent's Opus/Sonnet)
-- Minimal tool set: only Glob, Grep, Read, Bash
-- Focused prompt optimized for research briefs
-- Requires a Claude Code restart after first installation to be recognized
-
-### Key Technical Findings
-
-**Background agents in VS Code:**
-- `run_in_background: true` truly runs async — you CAN send new messages while it runs
-- The "busy" indicator in VS Code stays on while you (the parent) are processing, NOT because of the background agent
-- Task notifications from completed agents trigger a new "busy" cycle — mitigated by adding "fire-and-forget" instruction to the skill
-
-**Custom agents vs general-purpose:**
-- Custom agents in `~/.claude/agents/` ARE recognized by the Agent tool's `subagent_type` parameter
-- They require a Claude Code restart after creation to be indexed
-- They can specify their own model (haiku/sonnet/opus) independent of the parent session
-
-**AskUserQuestion tool:**
-- Limited to max 4 options per question (schema-enforced `maxItems: 4`)
-- The skill falls back to plain text numbered lists when >4 notes exist
-- The tool had bugs previously (auto-submitting without user input) but these appear fixed
-
-**Haiku language behavior:**
-- Haiku defaults to English even when input is Dutch
-- Requires explicit, emphatic instructions ("CRITICAL", "MUST", "do NOT default to English") to maintain language matching
-
-### Architecture Decisions
-
-**Why a separate agent instead of inline research?**
-- Speed: Haiku is fast and cheap for research tasks
-- Independence: doesn't consume the parent's context window
-- Focused: has only the tools it needs (no Write, no MCP, no web)
-
-**Why Bash heredoc instead of Write tool?**
-- Write tool requires permissions that background agents don't reliably get
-- Bash file writing (`cat > file << 'EOF'`) works with `mode: "bypassPermissions"`
-- Simpler — no tool permission negotiation needed
-
-**Why fire-and-forget?**
-- Task notifications trigger the VS Code "busy" indicator
-- The agent writes files and updates NOTES.md autonomously
-- No parent intervention needed — the user sees the file appear in their explorer
-
-**Why AskUserQuestion for ≤4, text list for >4?**
-- AskUserQuestion has a hard limit of 4 options
-- Text list scales to any number of notes
-- Notes should be archived (✅ Done) after pickup to keep the list short
-
-## Installation
-
-### Files to copy:
+## Repository Structure
 
 ```
-~/.claude/skills/notes/SKILL.md    → The /notes slash command
-~/.claude/agents/notes-researcher.md → The background research agent
+skills/notes/SKILL.md          # The /notes slash command definition
+agents/notes-researcher.md     # Background research agent definition
 ```
 
-### After installation:
-1. Restart Claude Code (the agent needs to be indexed)
-2. Test with `/notes test idea` — should save to NOTES.md and create a brief in `notes/`
-3. Test with `/notes` (no args) — should show open notes to pick up
+When installed, these files are copied to:
+- `~/.claude/skills/notes/SKILL.md`
+- `~/.claude/agents/notes-researcher.md`
 
-## Usage
+Runtime artifacts (gitignored): `NOTES.md` (note index), `notes/` (research briefs).
 
+## Testing Changes
+
+After modifying skill or agent files, copy them to the `~/.claude/` locations and restart Claude Code. The agent requires a restart to be re-indexed.
+
+```bash
+cp skills/notes/SKILL.md ~/.claude/skills/notes/SKILL.md
+cp agents/notes-researcher.md ~/.claude/agents/notes-researcher.md
 ```
-/notes [idea]     → Capture idea + start background research
-/notes            → Review open notes, pick one up
-```
 
-### Status flow:
-- 🆕 New → just captured, research brief in progress
-- 🔍 Analyzed → brief is ready, waiting to be picked up
-- ✅ Done → picked up and worked on
+Test capture: `/notes test idea` — should append to NOTES.md and create a brief in `notes/`.
+Test review: `/notes` (no args) — should list open notes.
 
-## Known Limitations
+## Critical Technical Constraints
 
-- The `model: haiku` in SKILL.md frontmatter may trigger an IDE linter warning ("not supported") but works at runtime
-- Background agents can't use the Write tool — must use Bash heredoc
-- AskUserQuestion maxes out at 4 options
-- Haiku needs strong language instructions to not default to English
-- First-time agent installation requires Claude Code restart
+These are hard-won lessons from iterative development. Do not try to "improve" past these:
+
+- **Background agents cannot use the Write tool** — must use Bash heredoc (`cat > file << 'EOF'`) for all file writing. This is a Claude Code permission limitation, not a bug.
+- **AskUserQuestion tool is limited to max 4 options** — the skill falls back to plain text lists when >4 notes exist.
+- **Haiku defaults to English** even when input is Dutch. Language-matching instructions must be emphatic ("CRITICAL", "MUST", "do NOT default to English").
+- **Agent installation requires Claude Code restart** — custom agents in `~/.claude/agents/` need to be indexed on startup.
+- **Fire-and-forget pattern is intentional** — the parent must NOT wait for or acknowledge the background agent's task notification, because it triggers VS Code's "busy" indicator.
+
+## Architecture Decisions
+
+- **Separate Haiku agent** (not inline): keeps parent context window clean, Haiku is fast/cheap for research
+- **Bash heredoc over Write tool**: only reliable file-write method for background agents
+- **`run_in_background: true`**: truly async in VS Code — user can continue working
+- **Status flow**: 🆕 New → 🔍 Analyzed → ✅ Done
+
+## Session Start
+
+If NOTES.md exists and has 🆕 New or 🔍 Analyzed entries, briefly mention the count.
