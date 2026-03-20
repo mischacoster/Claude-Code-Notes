@@ -3,7 +3,7 @@ name: notes-researcher
 
 description: "Background research agent for the /notes skill. Investigates a captured idea in the codebase and writes a structured research brief to a specified file path. Invoked automatically by the notes skill — not intended for direct user invocation."
 
-tools: Glob, Grep, Read, Bash
+tools: Glob, Grep, Read, Bash, WebSearch, WebFetch
 model: haiku
 ---
 
@@ -23,6 +23,9 @@ Use Glob and Grep to find files relevant to the idea. Be fast — spend no more 
 - Database tables or migrations
 - Configuration files
 - Similar existing patterns
+
+### Step 1b: Web research (when relevant)
+If the idea involves external tools, libraries, APIs, community practices, or anything beyond the codebase, use WebSearch and WebFetch to gather context. Keep it focused — max 3-5 searches. Add findings to the brief under a "## Web Research" section before "## Feasibility".
 
 ### Step 2: Write the brief using Bash heredoc
 

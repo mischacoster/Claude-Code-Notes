@@ -1,15 +1,63 @@
 ---
 name: notes
 description: Use when the user invokes /notes [idea] to capture a mid-session idea, or /notes without arguments to review open notes and pick one up.
-argument-hint: your idea or requirement (omit to review open notes)
-model: haiku
+argument-hint: "[idea] or [-r idea] to include background research"
 ---
 
 You are a quick-capture assistant. Behave based on whether ARGUMENTS is provided.
 
+First, check if ARGUMENTS starts with `-r ` (research mode flag). If so, strip `-r ` from ARGUMENTS and use **MODE A-RESEARCH**. If ARGUMENTS is provided without `-r`, use **MODE A-CAPTURE**. If no ARGUMENTS at all, use **MODE B**.
+
 ---
 
-## MODE A: ARGUMENTS provided — CAPTURE
+## MODE A-CAPTURE: QUICK SAVE (default)
+
+No bypass permissions needed. Uses Read/Write tools instead of Bash.
+
+### Step 1: Read NOTES.md
+
+Use the Read tool to read NOTES.md. If it doesn't exist, that's fine — we'll create it.
+
+### Step 2: Write the note entry
+
+Generate a timestamp in `YYYY-MM-DD HH:MM` format.
+
+If NOTES.md didn't exist, use the Write tool to create it with:
+```
+# 💡 Ideas & Notes
+
+Capture notes mid-session. Each note gets a research brief in notes/.
+
+
+---
+**[TIMESTAMP]** — ARGUMENTS
+- Status: 📝 Captured
+---
+```
+
+If NOTES.md already existed, use the Write tool to rewrite the full file with the new entry appended at the end:
+```
+
+---
+**[TIMESTAMP]** — ARGUMENTS
+- Status: 📝 Captured
+---
+```
+
+### Step 3: Output (exactly this, nothing more)
+
+```
+💾 Saved to NOTES.md
+↩️ Resuming...
+```
+
+**STOP. Do not elaborate. Resume the previous task immediately.**
+
+---
+
+## MODE A-RESEARCH: CAPTURE + BACKGROUND RESEARCH (`-r` flag)
+
+Requires bypass permissions for the background research agent to write files.
 
 ### Step 1: Bash (file I/O only, no spawning)
 
@@ -73,54 +121,62 @@ If IS_FIRST was true, append: `📌 Added session-start reminder to CLAUDE.md`
 
 ### Step 1: Read NOTES.md
 
-Use the Read tool. If the file doesn't exist, use AskUserQuestion:
-> Nog geen notes. Gebruik `/notes [idee]` om er een vast te leggen.
+Use the Read tool. If the file doesn't exist, output:
+> No notes yet. Use `/notes [idea]` to capture one.
 
 Stop.
 
 ### Step 2: Parse open notes
 
-Find all entries with `Status: 🆕 New` or `Status: 🔍 Analyzed`. For each, extract:
+Find all entries with `Status: 🆕 New`, `Status: 🔍 Analyzed`, or `Status: 📝 Captured`. For each, extract:
 - Idea text (text after ` — ` on the `**[timestamp]**` line)
-- Brief file path (from the `Brief:` line)
+- Brief file path (from the `Brief:` line, if present)
 - Status emoji
 
 ### Step 3: Ask which note to pick up
 
 If no open notes:
-> Alles bijgewerkt — geen open notes. Gebruik `/notes [idee]` voor een nieuwe.
+> All caught up — no open notes. Use `/notes [idea]` to capture a new one.
 
 **If 4 or fewer open notes:** use the **AskUserQuestion tool** with:
-- question: "Welke note wil je oppakken?"
-- options: one per open note (label = short idea title, description = status emoji + "brief klaar/nog bezig") + always add "Geen — ik kom later terug" as last option
+- question: "Which note do you want to pick up?"
+- options: one per open note (label = short idea title, description = status emoji + "brief ready/captured only") + always add "None — I'll come back later" as last option
 
 **If more than 4 open notes:** output a plain numbered list instead:
 ```
 **Open Notes:**
-1. [idea] (🔍 brief klaar)
-2. [idea] (🆕 nog bezig)
+1. [idea] (🔍 brief ready)
+2. [idea] (📝 captured only)
 ...
 
-Typ een nummer om er een op te pakken, of "geen" om later terug te komen.
+Type a number to pick one up, or "none" to come back later.
 ```
 
-### Step 4: Present the selected brief
+### Step 4: Present the selected note
 
-Read the corresponding brief file. Then output:
+**If the note has a brief file (🔍 Analyzed):** Read the brief file and output:
 
 **[idea title]**
 
 _[one sentence from Feasibility]_
 
-**Aanpak:**
+**Approach:**
 [Suggested Approach — numbered list]
 
 ---
-**Open vragen voor jou:**
+**Open questions:**
 1. [Question 1]
 2. [Question 2]
 ...
 
-Zullen we beginnen? Dan maak ik eerst een plan.
+Shall we start? I'll create a plan first.
 
-Then update NOTES.md: change the status of the picked note from `🔍 Analyzed` or `🆕 New` to `✅ Done`.
+**If the note has no brief (📝 Captured):** Output the idea and ask how the user wants to proceed:
+
+**[idea title]**
+
+This note was captured without background research. Would you like me to:
+1. Research the codebase now and suggest an approach
+2. Just start working on it directly
+
+Then update NOTES.md: change the status of the picked note to `✅ Done`.
