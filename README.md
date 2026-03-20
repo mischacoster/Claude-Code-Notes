@@ -140,14 +140,14 @@ The skill is designed to work across all Claude Code permission modes.
 | Mode | `/notes [idea]` | `/notes -r [idea]` | `/notes` (review) |
 |------|-----------------|--------------------|--------------------|
 | Bypass permissions | No prompts | No prompts | No prompts |
-| Ask before edits | Once per session | Not available | Prompts per action |
-| Auto accept edits | Once per session | Not available | Prompts per action |
+| Ask before edits | Once per session | Not available* | Once per session |
+| Auto accept edits | Once per session | Not available* | Once per session |
 
 **Quick capture works for everyone.** The first time you use `/notes [idea]` in a session, Claude Code asks permission for the Write tool. Choose "Allow for this session" and you're set — no more prompts until you restart.
 
-**Background research requires bypass permissions.** The research agent runs in the background and needs Bash access to write the brief file. Background agents in Claude Code don't inherit tool permissions from the parent session, so only bypass permissions grants this. Without it, the agent runs but can't save its output — wasting tokens with no result. That's why research is opt-in with the `-r` flag.
+**Background research requires bypass permissions.** The research agent runs in the background and needs Bash access to write the brief file. Background agents in Claude Code can't prompt for tool permissions, so only session-wide bypass grants the necessary access. Without it, the agent runs but can't save its output — wasting tokens with no result. That's why research is opt-in with the `-r` flag.
 
-> **Why not make research the default?** Without bypass permissions, the research agent silently fails — it uses tokens but produces no output. We don't want anyone unknowingly burning through Haiku credits for a brief that never gets written.
+*\* Without bypass permissions, the research agent silently fails — it uses tokens but produces no output. That's why `-r` is opt-in: we don't want anyone unknowingly burning through Haiku credits for a brief that never gets written.*
 
 ## Known limitations
 

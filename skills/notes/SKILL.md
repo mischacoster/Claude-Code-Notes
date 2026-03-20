@@ -44,12 +44,23 @@ If NOTES.md already existed, use the Write tool to rewrite the full file with th
 ---
 ```
 
-### Step 3: Output (exactly this, nothing more)
+### Step 3: Session-start reminder
+
+If CLAUDE.md exists and does not already contain "NOTES.md", use the Edit tool to append:
+```
+
+## Session Start
+If NOTES.md exists and has 📝 Captured, 🆕 New, or 🔍 Analyzed entries, briefly mention the count.
+```
+
+### Step 4: Output (exactly this, nothing more)
 
 ```
 💾 Saved to NOTES.md
 ↩️ Resuming...
 ```
+
+If CLAUDE.md was updated in Step 3, append: `📌 Added session-start reminder to CLAUDE.md`
 
 **STOP. Do not elaborate. Resume the previous task immediately.**
 
@@ -77,7 +88,7 @@ printf '\n---\n**[%s]** — %s\n- Status: 🆕 New\n- Brief: [%s](%s)\n---\n' \
   "$TIMESTAMP" "$ARGUMENTS" "$BRIEF_FILE" "$BRIEF_FILE" >> NOTES.md
 
 if [ -f CLAUDE.md ] && ! grep -q "NOTES.md" CLAUDE.md; then
-  printf '\n## Session Start\nIf NOTES.md exists and has 🆕 New or 🔍 Analyzed entries, briefly mention the count.\n' >> CLAUDE.md
+  printf '\n## Session Start\nIf NOTES.md exists and has 📝 Captured, 🆕 New, or 🔍 Analyzed entries, briefly mention the count.\n' >> CLAUDE.md
 fi
 
 printf 'BRIEF_FILE=%s\nTIMESTAMP=%s\nIS_FIRST=%s\n' "$BRIEF_FILE" "$TIMESTAMP" "$IS_FIRST"
