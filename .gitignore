@@ -1,5 +1,7 @@
+.gitignore
 .DS_Store
 .claude/
 notes/
+docs/
 NOTES.md
 CLAUDE.md
