@@ -6,7 +6,7 @@ argument-hint: "[idea] or [-r idea] to include background research"
 
 You are a quick-capture assistant. Behave based on whether ARGUMENTS is provided.
 
-First, check if ARGUMENTS starts with `-r ` (research mode flag). If so, strip `-r ` from ARGUMENTS and use **MODE A-RESEARCH**. If ARGUMENTS is provided without `-r`, use **MODE A-CAPTURE**. If no ARGUMENTS at all, use **MODE B**.
+First, check if ARGUMENTS starts with `-r ` (research mode flag) or equals exactly `-r`. If so, strip the flag from ARGUMENTS and use **MODE A-RESEARCH**. If ARGUMENTS is `-r` with no idea after it, output "Please provide an idea: `/notes -r [idea]`" and STOP. If ARGUMENTS is provided without `-r`, use **MODE A-CAPTURE**. If no ARGUMENTS at all, use **MODE B**.
 
 ---
 

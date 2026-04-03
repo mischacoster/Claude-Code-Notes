@@ -70,7 +70,7 @@ ENDOFBRIEF
 python3 << 'PYEOF'
 import re
 content = open('NOTES.md').read()
-content = content.replace('NOTES_ENTRY\n- Status: New', 'NOTES_ENTRY\n- Status: Analyzed')
+content = content.replace('NOTES_ENTRY\n- Status: 🆕 New', 'NOTES_ENTRY\n- Status: 🔍 Analyzed')
 open('NOTES.md', 'w').write(content)
 PYEOF
 ```

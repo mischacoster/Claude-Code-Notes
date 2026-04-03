@@ -2,6 +2,8 @@
 
 **Capture ideas mid-session without breaking your flow.**
 
+> Last updated: 2026-04-03 — Dual-mode capture (`-r` flag), permission-aware design, web research support
+
 ---
 
 You're deep in a debugging session. Suddenly you realize the authentication flow could use a retry mechanism. It's not related to what you're doing right now, and you don't want to lose your train of thought — but you also don't want to forget it.
@@ -43,37 +45,37 @@ Shows your open notes and lets you pick one up. If background research was done,
 
 The skill consists of two files: a slash command and a background research agent.
 
-### 1. Copy the files
+### Option A: Clone the repo
 
 ```bash
-# Create directories if they don't exist
+git clone https://github.com/mischacoster/Claude-Code-Notes.git
+cd Claude-Code-Notes
+
 mkdir -p ~/.claude/skills/notes
 mkdir -p ~/.claude/agents
 
-# Copy skill and agent
 cp skills/notes/SKILL.md ~/.claude/skills/notes/SKILL.md
 cp agents/notes-researcher.md ~/.claude/agents/notes-researcher.md
 ```
 
-### 2. Restart Claude Code
+### Option B: Download the files directly
 
-The agent needs to be indexed on startup. A restart is required after first installation.
+```bash
+mkdir -p ~/.claude/skills/notes
+mkdir -p ~/.claude/agents
 
-### 3. Verify
+curl -o ~/.claude/skills/notes/SKILL.md \
+  https://raw.githubusercontent.com/mischacoster/Claude-Code-Notes/master/skills/notes/SKILL.md
 
-```
-/notes test idea
-```
-
-You should see a confirmation message and a new `NOTES.md` file in your project root.
-
-To test background research (requires bypass permissions):
-
-```
-/notes -r test idea with research
+curl -o ~/.claude/agents/notes-researcher.md \
+  https://raw.githubusercontent.com/mischacoster/Claude-Code-Notes/master/agents/notes-researcher.md
 ```
 
-You should also see a research brief appearing in `notes/`.
+### After installation
+
+1. **Restart Claude Code** — the agent needs to be indexed on startup.
+2. **Verify** — type `/notes test idea`. You should see a confirmation and a new `NOTES.md` in your project root.
+3. **Test research** (optional, requires bypass permissions) — type `/notes -r test idea with research`. A research brief should appear in `notes/`.
 
 ## Usage
 
@@ -149,12 +151,32 @@ The skill is designed to work across all Claude Code permission modes.
 
 *\* Without bypass permissions, the research agent silently fails — it uses tokens but produces no output. That's why `-r` is opt-in: we don't want anyone unknowingly burning through Haiku credits for a brief that never gets written.*
 
+## Platform compatibility
+
+Tested with Claude Code in VS Code and terminal. Should work anywhere Claude Code supports custom skills and agents, including claude.ai (code tab). The `-r` flag requires background agent support — availability may vary by platform.
+
 ## Known limitations
 
 - **Max 4 options in the review picker** — when you have more than 4 open notes, the skill falls back to a numbered text list instead of the interactive picker. This is a Claude Code platform limit.
 - **Restart required after first install** — custom agents need to be indexed on Claude Code startup. Skill changes take effect immediately.
 - **Background agents can't use the Write tool** — file writing uses Bash heredocs. This is a Claude Code platform constraint, not a bug.
 - **VS Code shows a busy indicator** while the background agent runs. This is cosmetic — you can continue working normally.
+
+## Uninstall
+
+```bash
+rm ~/.claude/skills/notes/SKILL.md
+rm ~/.claude/agents/notes-researcher.md
+```
+
+Optionally remove leftover files from your project directories:
+
+```bash
+rm NOTES.md
+rm -rf notes/
+```
+
+Restart Claude Code to complete the removal.
 
 ## License
 
